@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiDollarSign, FiShoppingBag, FiTrendingUp, FiAlertTriangle, FiBox } from "react-icons/fi";
-import { getAllProducts } from "@/services/productServices";
-import { getAllTransactions } from "@/services/transactionServices";
+import { FiDollarSign, FiShoppingBag, FiTrendingUp, FiAlertTriangle, FiBox, FiCalendar } from "react-icons/fi";
+import { getDashboardSummary } from "@/services/dashboardServices";
 
 interface ReportState {
   totalSales: number;
   totalTransactions: number;
-  topProducts: any[];
-  lowStockProducts: any[];
+  topProducts: { name: string; soldQty: number }[];
+  lowStockProducts: { id: number; sku: string; name: string; qty: number }[];
 }
 
 export default function DashboardOverview() {
@@ -19,77 +18,55 @@ export default function DashboardOverview() {
     topProducts: [],
     lowStockProducts: [],
   });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [range, setRange] = useState("today"); // State untuk rentang waktu
 
+  const fetchDashboardData = async (selectedRange: string) => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      // data dari backend summary
+      const data = await getDashboardSummary(selectedRange);
+      setReport(data);
+
+    } catch (err: any) {
+      setError("Gagal memuat data dari server.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ketika range berubah, refresh
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-
-        const [productsData, transactionsData] = await Promise.all([
-          getAllProducts(),
-          getAllTransactions().catch(() => [])
-        ]);
-
-        // Filter stok <= 20
-        const lowStock = productsData.filter((prod: any) => prod.qty <= 20);
-
-        // Filter transaksihari ini
-        const todayStr = new Date().toDateString();
-        const todayTransactions = transactionsData.filter((trx: any) => {
-          return trx.createdAt ? new Date(trx.createdAt).toDateString() === todayStr : false;
-        });
-
-        let sales = 0;
-        const productSales: Record<string, { name: string; qty: number }> = {};
-
-        todayTransactions.forEach((trx: any) => {
-          sales += Number(trx.totalPrice) || 0;
-
-          if (trx.details && Array.isArray(trx.details)) {
-            trx.details.forEach((item: any) => {
-              const productId = item.productId;
-              if (!productSales[productId]) {
-                const matchedMasterProduct = productsData.find((p: any) => p.id === productId);
-                
-                productSales[productId] = { 
-                  name: matchedMasterProduct?.name || item.product?.name || `Produk #${productId}`, 
-                  qty: 0 
-                };
-              }
-              productSales[productId].qty += Number(item.qty);
-            });
-          }
-        });
-
-        const sortedTopProducts = Object.values(productSales)
-          .sort((a, b) => b.qty - a.qty)
-          .slice(0, 5);
-
-        setReport({
-          totalSales: sales,
-          totalTransactions: todayTransactions.length,
-          topProducts: sortedTopProducts,
-          lowStockProducts: lowStock,
-        });
-
-      } catch (err: any) {
-        setError("Gagal memuat data dari server.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
+    fetchDashboardData(range);
+  }, [range]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
-        <p className="text-gray-500 text-sm mt-1">Analisis dan metrik performa toko hari ini.</p>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+          <p className="text-gray-500 text-sm mt-1">Analisis dan metrik performa toko.</p>
+        </div>
+        
+        {/* Tombol Filter Rentang Waktu */}
+        <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+          <FiCalendar className="text-gray-400 ml-2" />
+          <select 
+            value={range}
+            onChange={(e) => setRange(e.target.value)}
+            className="bg-transparent text-sm font-medium text-gray-700 py-1.5 px-2 focus:outline-none cursor-pointer"
+          >
+            <option value="today">Hari Ini</option>
+            <option value="week">7 Hari Terakhir</option>
+            <option value="month">1 Bulan Terakhir</option>
+            <option value="year">1 Tahun Terakhir</option>
+          </select>
+        </div>
       </div>
 
       {error && <div className="p-3 bg-red-100 text-red-600 text-sm rounded-lg">{error}</div>}
@@ -100,7 +77,7 @@ export default function DashboardOverview() {
             <FiDollarSign />
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Omset Hari Ini</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Omset</p>
             <p className="text-2xl font-bold text-gray-800 mt-1">
               {loading ? "..." : `Rp ${report.totalSales.toLocaleString('id-ID')}`}
             </p>
@@ -151,13 +128,13 @@ export default function DashboardOverview() {
               {loading ? (
                 <tr><td colSpan={3} className="p-4 text-center text-gray-400">Loading...</td></tr>
               ) : report.topProducts.length === 0 ? (
-                <tr><td colSpan={3} className="p-4 text-center text-gray-400">Belum ada data penjualan harian.</td></tr>
+                <tr><td colSpan={3} className="p-4 text-center text-gray-400">Belum ada data penjualan.</td></tr>
               ) : (
                 report.topProducts.map((prod, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
                     <td className="p-4 font-medium text-gray-400">#{idx + 1}</td>
                     <td className="p-4 font-semibold text-gray-700">{prod.name}</td>
-                    <td className="p-4 text-right text-green-600 font-bold">{prod.qty} Pcs</td>
+                    <td className="p-4 text-right text-green-600 font-bold">{prod.soldQty} Pcs</td>
                   </tr>
                 ))
               )}
