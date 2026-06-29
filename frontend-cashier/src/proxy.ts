@@ -1,8 +1,11 @@
-// src/middleware.ts
+// src/middleware.ts ke proxy.ts
+// menghindari kebingungan middleware dan proxy
+// source: https://nextjs.org/docs/messages/middleware-to-proxy
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // fungsi middleware ini akan dijalankan untuk setiap request
   // untuk cek token pada header dan redirect
 
