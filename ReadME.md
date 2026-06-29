@@ -144,24 +144,34 @@ pos-kasir/
 │   ├── .env-example          
 │   └── package.json
 │
-├── frontend-cashiers/                      # Next.js Frontend Application
+├──  frontend-cashier/       # Next.js Frontend Application
+│   ├── public/              # Static Assets (Favicon, SVG Icons)
 │   ├── src/
-│   │   └── app/
-│   │       ├── (dashboardLayout)/ # Protected Dashboard Layout
-│   │       ├── auth/              # Authentication Pages
-│   │       └── layout.tsx         # Root Application Layout
-│   │
-│   ├── public/                    # Static Assets 
-│   ├── components/                # UI Components
-│   ├── services/                  # API Service Layer (Axios)
-│   ├── hooks/                     # Custom Hooks
-│   ├── lib/                       # Shared Utilities & Helpers
-│   ├── .env.example               # Environment Variables
-│   ├── tailwind.config.ts         # Tailwind CSS Configuration
-│   ├── next.config.ts             # Next.js Configuration
+│   │   ├── app/             # Next.js App Router Core
+│   │   │   ├── (dashboardLayout)/ # Protected Route Group Layout
+│   │   │   │   ├── cart/        # Cashier Cart Page (page.tsx)
+│   │   │   │   ├── dashboard/   # Dashboard Overview Page (page.tsx)
+│   │   │   │   ├── history/     # Transaction History Page (page.tsx)
+│   │   │   │   ├── products/    # Product Management Page (page.tsx)
+│   │   │   │   └── layout.tsx   # Dashboard Shared Layout (Sidebar & Header)
+│   │   │   ├── auth/            # Guest Route Group
+│   │   │   │   ├── login/       # Cashier Login Page
+│   │   │   │   └── register/    # Admin Registration Page 
+│   │   │   └── layout.tsx       # Application Root Layout
+│   │   ├── pages/           # Pages Directory Fallback/Legacy
+│   │   ├── services/        # API Service Layer (Axios Core Services)
+│   │   │   ├── authServices.ts        # Authentication API requests (Login, Register)
+│   │   │   ├── axiosInstance.ts       # Global Axios instance & token interceptors
+│   │   │   ├── cartServices.ts        # Cart CRUD management API requests 
+│   │   │   ├── productServices.ts     # Product CRUD and search API requests
+│   │   │   └── transactionServices.ts # Checkout processing and history API requests
+│   │   ├── styles/          # Global CSS & Tailwind Injector
+│   │   └── middleware.ts    # Route Protection (Edge Cookie Guard / Route Guard)
+│   ├── eslint.config.mjs    # Linter Configuration
+│   ├── next.config.ts       # Next.js Server Configurations
 │   └── package.json
 │
-└── README.md                      # Project Documentation
+└── README.md                # Project Documentation
 ```
 
 Keterangan : 

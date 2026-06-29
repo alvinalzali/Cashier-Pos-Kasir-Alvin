@@ -24,4 +24,3 @@ export const deleteProduct = async (id: number) => {
     const response = await api.delete(`/product/${id}`);
     return response.data;
 }
-
