@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiUploadCloud } from 'react-icons/fi';
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '@/services/productServices';
+import { uploadProductImage } from '@/services/uploadServices';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // State untuk Modal & Form
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'create' | 'edit'>('create');
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -20,6 +22,11 @@ export default function ProductsPage() {
     category: 'Makanan',
     pictureUrl: ''
   });
+
+  // State upload gambar
+  const [previewImage, setPreviewImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const fetchProducts = async () => {
     try {
@@ -37,10 +44,47 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
+  // upload gambar
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // max file size
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Ukuran gambar terlalu besar. Maksimal 5MB');
+      return;
+    }
+
+    // preview
+    const localUrl = URL.createObjectURL(file);
+    setPreviewImage(localUrl);
+    setUploadError('');
+    setIsUploading(true);
+
+    try {
+      const data = await uploadProductImage(file);
+      setForm({ ...form, pictureUrl: data.pictureUrl });
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || 'Gagal mengunggah gambar.');
+      setPreviewImage(''); 
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setPreviewImage('');
+    setForm({ ...form, pictureUrl: '' });
+    setUploadError('');
+  };
+  // ----------------------------
+
   const handleOpenCreate = () => {
     setModalType('create');
     setSelectedId(null);
     setForm({ sku: '', name: '', price: 0, qty: 0, category: 'Makanan', pictureUrl: '' });
+    setPreviewImage(''); 
+    setUploadError('');
     setIsModalOpen(true);
   };
 
@@ -55,6 +99,8 @@ export default function ProductsPage() {
       category: product.category || 'Makanan',
       pictureUrl: product.pictureUrl || ''
     });
+    setPreviewImage(product.pictureUrl || '');
+    setUploadError('');
     setIsModalOpen(true);
   };
 
@@ -70,7 +116,8 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (isUploading) return; 
+
     const payload = {
       ...form,
       id: selectedId,
@@ -110,11 +157,12 @@ export default function ProductsPage() {
         </button>
       </div>
       
+      {/* Card Produk */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => (
           <div key={product.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
-              <div className="h-32 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-400 font-mono text-xs overflow-hidden">
+              <div className="h-32 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-400 font-mono text-xs overflow-hidden border border-gray-100">
                 {product.pictureUrl ? (
                   <img src={product.pictureUrl} alt={product.name} className="w-full h-full object-cover" />
                 ) : (
@@ -122,7 +170,7 @@ export default function ProductsPage() {
                 )}
               </div>
               <h3 className="font-bold text-gray-800 line-clamp-1">{product.name}</h3>
-              <p className="text-xs text-gray-400 mt-1">Category: {product.category || 'Umum'}</p>
+              <p className="text-xs text-gray-400 mt-1">Kategori: {product.category || 'Umum'}</p>
               
               <div className="mt-3 flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                 <span className="text-blue-600 font-extrabold text-sm">Rp {product.price.toLocaleString('id-ID')}</span>
@@ -152,6 +200,7 @@ export default function ProductsPage() {
         ))}
       </div>
 
+      {/* Modal Form Tambah/Edit Produk */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
@@ -167,14 +216,58 @@ export default function ProductsPage() {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm" autoComplete="off">
+              
+              {/* Upload Gambar */}
+              <div className="space-y-1 mb-4">
+                <label className="block text-xs font-semibold text-gray-500">FOTO PRODUK (OPSIONAL)</label>
+                {previewImage ? (
+                  <div className="relative w-full h-32 border rounded-lg overflow-hidden group bg-gray-50 flex items-center justify-center">
+                    <img 
+                      src={previewImage} 
+                      alt="Preview" 
+                      className={`max-h-full object-contain ${isUploading ? 'opacity-50' : 'opacity-100'}`} 
+                    />
+                    {isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <span className="bg-white px-3 py-1 rounded-full text-xs font-semibold text-blue-600 shadow">
+                          Mengunggah...
+                        </span>
+                      </div>
+                    )}
+                    {!isUploading && (
+                      <button 
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <FiX size={14} />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-50 hover:border-blue-400 transition-colors cursor-pointer">
+                    <FiUploadCloud className="text-gray-400 text-2xl mb-1" />
+                    <span className="text-xs text-gray-500 font-medium">Klik untuk pilih gambar</span>
+                    <span className="text-[10px] text-gray-400 mt-1">Maks. 5MB (JPG, PNG)</span>
+                    <input 
+                      type="file" 
+                      accept="image/jpeg, image/png, image/webp"
+                      onChange={handleImageChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+                )}
+                {uploadError && <p className="text-red-500 text-[11px] mt-1">{uploadError}</p>}
+              </div>
+
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-500">SKU PRODUK</label>
                 <input
                   type="text"
                   required
                   disabled={modalType === 'edit'}
-                  autoComplete="off"
                   value={form.sku || ''}
+                  placeholder = "Contoh : PROD-002-XYZ"
                   onChange={(e) => setForm({ ...form, sku: e.target.value })}
                   className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 />
@@ -185,8 +278,8 @@ export default function ProductsPage() {
                 <input
                   type="text"
                   required
-                  autoComplete="off"
                   value={form.name || ''}
+                  placeholder = "Contoh : Produk A"
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -199,6 +292,7 @@ export default function ProductsPage() {
                     type="number"
                     required
                     value={form.price || ''}
+                    placeholder = "Contoh : 10000"
                     onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
                     className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -209,6 +303,7 @@ export default function ProductsPage() {
                     type="number"
                     required
                     value={form.qty || ''}
+                    placeholder = "Contoh : 10"
                     onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })}
                     className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -219,6 +314,7 @@ export default function ProductsPage() {
                 <label className="block text-xs font-semibold text-gray-500">KATEGORI</label>
                 <select
                   value={form.category}
+
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -229,22 +325,12 @@ export default function ProductsPage() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-500">URL GAMBAR (OPTIONAL)</label>
-                <input
-                  type="text"
-                  autoComplete="off"
-                  value={form.pictureUrl || ''}
-                  onChange={(e) => setForm({ ...form, pictureUrl: e.target.value })}
-                  className="w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors shadow-sm mt-2"
+                disabled={isUploading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 rounded-lg transition-colors shadow-sm mt-4"
               >
-                {modalType === 'create' ? 'Simpan Produk' : 'Simpan Perubahan'}
+                {isUploading ? 'Menunggu Upload...' : (modalType === 'create' ? 'Simpan Produk' : 'Simpan Perubahan')}
               </button>
             </form>
           </div>

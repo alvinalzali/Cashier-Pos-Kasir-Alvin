@@ -160,7 +160,11 @@ export default function POSCartPage() {
                 <div key={product.id} className="bg-white p-4 rounded-xl border border-gray-200 flex flex-col justify-between shadow-sm relative">
                   <div>
                     <div className="w-full h-24 bg-gray-100 rounded-lg mb-2 flex items-center justify-center text-gray-400 font-mono text-xs">
-                      {product.sku}
+                      {product.pictureUrl ? (
+                        <img src={product.pictureUrl} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{product.sku}</span>
+                      )}
                     </div>
                     <h4 className="font-semibold text-gray-800 text-sm line-clamp-2">{product.name}</h4>
                     <div className="flex justify-between items-center mt-1">
