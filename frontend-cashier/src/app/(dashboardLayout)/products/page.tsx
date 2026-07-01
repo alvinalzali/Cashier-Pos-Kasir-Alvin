@@ -158,44 +158,70 @@ export default function ProductsPage() {
       </div>
       
       {/* Card Produk */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full items-stretch">
         {products.map((product) => (
-          <div key={product.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div>
-              <div className="h-32 bg-gray-100 rounded-lg mb-4 flex items-center justify-center text-gray-400 font-mono text-xs overflow-hidden border border-gray-100">
+          <div 
+            key={product.id} 
+            className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between hover:shadow-md transition-shadow w-full"
+          >
+            <div className="flex-1 flex flex-col">
+              
+              {/* Kunci tinggi kontainer gambar ke h-48 (192px) agar memanjang ke atas */}
+              <div className="w-full h-64 bg-gray-50 rounded-lg mb-4 flex items-center justify-center text-gray-400 font-mono text-xs overflow-hidden border border-gray-100 shrink-0">
                 {product.pictureUrl ? (
-                  <img src={product.pictureUrl} alt={product.name} className="w-full h-full object-cover" />
+                  <img 
+                    src={product.pictureUrl} 
+                    alt={product.name} 
+                    // w-full h-full object-cover dipaksa tanpa absolute agar mengisi h-48 seutuhnya
+                    className="w-full h-full object-cover block" 
+                  />
                 ) : (
-                  <span>{product.sku}</span>
+                  <span className="p-4 text-center break-all text-gray-400 bg-gray-100 w-full h-full flex items-center justify-center rounded-lg">
+                    {product.sku}
+                  </span>
                 )}
               </div>
-              <h3 className="font-bold text-gray-800 line-clamp-1">{product.name}</h3>
-              <p className="text-xs text-gray-400 mt-1">Kategori: {product.category || 'Umum'}</p>
               
-              <div className="mt-3 flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                <span className="text-blue-600 font-extrabold text-sm">Rp {product.price.toLocaleString('id-ID')}</span>
+              {/* Judul & Kategori Produk */}
+              <div className="mb-4">
+                <h3 className="font-bold text-gray-800 line-clamp-2 text-sm leading-tight mb-1" title={product.name}>
+                  {product.name}
+                </h3>
+                <p className="text-xs text-gray-400">Kategori: {product.category || 'Umum'}</p>
+              </div>
+            </div>
+
+            {/* Bagian Bawah (Harga, Stok, Tombol) */}
+            <div className="mt-auto space-y-3">
+              {/* Harga & Stok */}
+              <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="text-blue-600 font-extrabold text-sm">
+                  Rp {product.price.toLocaleString('id-ID')}
+                </span>
                 <span className={`text-xs px-2 py-0.5 rounded-md font-bold ${product.qty <= 20 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
                   Stok: {product.qty}
                 </span>
               </div>
+
+              {/* Tombol Aksi */}
+              <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+                <button
+                  onClick={() => handleOpenEdit(product)}
+                  className="flex items-center justify-center space-x-1 border border-gray-300 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50 text-xs font-semibold transition-colors"
+                >
+                  <FiEdit2 />
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(product.id)}
+                  className="flex items-center justify-center space-x-1 bg-red-50 text-red-600 py-1.5 rounded-lg hover:bg-red-100 text-xs font-semibold transition-colors"
+                >
+                  <FiTrash2 />
+                  <span>Hapus</span>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-4 border-t border-gray-100 pt-3">
-              <button
-                onClick={() => handleOpenEdit(product)}
-                className="flex items-center justify-center space-x-1 border border-gray-300 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50 text-xs font-semibold transition-colors"
-              >
-                <FiEdit2 />
-                <span>Edit</span>
-              </button>
-              <button
-                onClick={() => handleDelete(product.id)}
-                className="flex items-center justify-center space-x-1 bg-red-50 text-red-600 py-1.5 rounded-lg hover:bg-red-100 text-xs font-semibold transition-colors"
-              >
-                <FiTrash2 />
-                <span>Hapus</span>
-              </button>
-            </div>
           </div>
         ))}
       </div>

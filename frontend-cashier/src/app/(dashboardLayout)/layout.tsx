@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header dengan tombol toggle menu */}
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 border-b border-gray-100">
+        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 border-b border-gray-100 flex-shrink-0 z-10">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -100,8 +100,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-8">
-          {children}
+        <main className="h-[calc(100vh-64px)] overflow-y-auto p-8 w-full block content-start">
+          <div className="w-full h-auto min-h-full pb-12">
+            {children}
+          </div>
         </main>
       </div>
     </div>
